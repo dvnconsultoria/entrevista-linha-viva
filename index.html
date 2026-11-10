@@ -546,14 +546,10 @@ function analytics(a){
 
 async function finish(instant){
   S.done=true;renderProgress();dock.innerHTML="";
-  const a=S.a,sc=moduleScores(a),tot=totals(a);
+  const a=S.a,sc=moduleScores(a);
   await addBot(`Obrigado, ${esc(first(a.nome))}! Sua entrevista foi registrada.`,"fim",{instant});
   if(!instant)speakKey("fim");
-  const res=el("div",{class:"result"},el("span",{class:"h"},"Módulo"),el("span",{class:"h"},"Teoria"),el("span",{class:"h"},"Prática"));
-  sc.forEach(({m,on,t,p})=>{res.append(el("span",{},`${m.code.split(" ·")[0]} · ${m.title}`),el("span",{class:"n"},on?f1(t):"n/a"),el("span",{class:"n"},on?f1(p):"n/a"));
-    const bar=el("div",{class:"bar"});if(on){const b=el("b");b.style.width=`${((t+p)/2)/4*100}%`;bar.append(b);}res.append(bar);});
-  const aiBox=el("div",{class:"ai",hidden:true});
-  chat.append(el("div",{class:"card","data-step":"fim"},el("h3",{},`Resumo · média geral: Teoria ${f1(tot.t)} · Prática ${f1(tot.p)}`),res,aiBox));scroll();
+  const aiBox=el("div"); // parecer da IA fica só para a gestão (painel), não aparece ao entrevistado
   S.a.status="concluída";S.a.concluidaEm=S.a.concluidaEm||new Date().toISOString();const ok=await saveNow();if(ok)store.del(DRAFT);
   const restart=el("button",{class:"ghost",onclick:()=>{store.del(DRAFT);S.a={};S.hist=[];S.done=false;chat.innerHTML="";welcome();}},"Nova entrevista neste aparelho");
   const msg=el("span",{class:"hint"},ok?"Respostas enviadas para a equipe de avaliação.":"Não foi possível enviar agora. Verifique a internet e toque em Enviar novamente.");
@@ -565,8 +561,8 @@ async function aiFeedback(box,sc){
   const linhas=sc.map(({m,on,t,p})=>`${m.code} ${m.title}: ${on?`teoria ${f1(t)}, prática ${f1(p)}`:"não se aplica"}`).join("\n");
   const fracos=analytics(a).notas.filter(n=>Math.min(n.teoria,n.pratica)<=2).slice(0,8).map(n=>`- Mód ${n.modulo}: ${n.atividade}`).join("\n")||"nenhuma";
   const prompt=`Você é o Carlos, instrutor de Linha Viva da old educação. Escreva em português do Brasil, em 3 a 4 frases curtas e cordiais, um parecer sobre a autoavaliação do multiplicador ${first(a.nome)} (${a.experiencia} anos de experiência; formação: ${(a.formacao||[]).join(", ")}). Destaque pontos fortes e 1 ou 2 focos de desenvolvimento, sem inventar dados. Escala 1 a 4 (4 = domina e ensina).\nMédias por módulo:\n${linhas}\nAtividades com nota até 2:\n${fracos}\nSem listas e sem títulos.`;
-  box.hidden=false;box.textContent="Carlos está preparando um parecer…";
-  try{const r=await S.sample(prompt,{modelTier:"quick",cache:false,onText:({text})=>{box.textContent=text;scroll();}});box.textContent=r.text;S.a.parecerIA=r.text;saveSoon();}catch{box.hidden=true;}
+  
+  try{const r=await S.sample(prompt,{modelTier:"quick",cache:false,onText:()=>{}});box.textContent=r.text;S.a.parecerIA=r.text;saveSoon();}catch{box.hidden=true;}
 }
 
 /* ================= Persistence ================= */
